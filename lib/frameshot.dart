@@ -9,10 +9,12 @@ export 'frameshot_controller.dart';
 
 class Frameshot extends ConsumerStatefulWidget {
   final FrameshotController controller;
+  final double width;
 
   const Frameshot({
     super.key,
     required this.controller,
+    required this.width
   });
 
   @override
@@ -49,9 +51,10 @@ class _FrameshotState extends ConsumerState<Frameshot> {
       },
       view: (imageUrl, controller) {
         return FrameShotView(
-            imageUrl: imageUrl,
+            frameImageUrl: imageUrl,
+            frameWidth: widget.width,
             cameraController: controller,
-            cameraIndex: widget.controller.position == 'front' ? 1 : 0);
+            cameraIndex: widget.controller.getPosition == 'front' ? 1 : 0);
       },
       show: (image) {
         return FrameshotShow(image: image);

@@ -60,7 +60,10 @@ class _HomeState extends State<Home> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Frameshot(controller: controller),
+                      child: Frameshot(
+                        controller: controller,
+                        width: double.infinity,
+                      ),
                     ),
                     Row(
                       children: [

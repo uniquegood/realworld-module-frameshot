@@ -1,18 +1,31 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:event_listener/event_listener.dart';
+import 'package:share_plus/share_plus.dart';
 
 class FrameshotController {
   final EventListener event = EventListener();
 
   final String imageUrl;
-  final String position;
+
+  String _position;
+
+  String get getPosition => _position;
+
+  // Temp File
+  String? _tempFilePath;
+
+  set position(String value) {
+    _position = value;
+    event.emit('capture', 'position');
+  }
 
   FrameshotController({
     required this.imageUrl,
-    required this.position,
-  });
+    required String position,
+  }) : _position = position;
 
   dispose() {
     event.removeAllListeners('capture');
@@ -33,8 +46,9 @@ class FrameshotController {
   Future<bool> save() async {
     final completer = Completer<bool>();
     event.once('capture_save', (res) {
-      if (res is bool) {
-        completer.complete(res);
+      if (res is String) {
+        _tempFilePath = res;
+        completer.complete(true);
       } else {
         completer.complete(false);
       }
@@ -56,5 +70,10 @@ class FrameshotController {
     });
     event.emit('capture', 'capture');
     return await completer.future;
+  }
+
+  Future<void> share() async {
+    if(_tempFilePath == null) return;
+    await Share.shareXFiles([XFile(_tempFilePath!)]);
   }
 }

@@ -13,13 +13,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class FrameShotView extends StatefulHookConsumerWidget {
-  final String imageUrl;
+  final String frameImageUrl;
+  final double frameWidth;
   final CameraController cameraController;
   final int cameraIndex;
 
   const FrameShotView({
     super.key,
-    required this.imageUrl,
+    required this.frameImageUrl,
+    required this.frameWidth,
     required this.cameraController,
     required this.cameraIndex,
   });
@@ -42,36 +44,38 @@ class _FrameShotViewPageState extends ConsumerState<FrameShotView> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final w = size.width;
+    final w = widget.frameWidth;
 
-    return Stack(
-      children: [
-        ClipRRect(
-          child: SizedOverflowBox(
-            size: Size(w, w),
-            alignment: Alignment.center,
-            child: CameraPreview(widget.cameraController),
+    return Center(
+      child: Stack(
+        children: [
+          ClipRRect(
+            child: SizedOverflowBox(
+              size: Size(w, w),
+              alignment: Alignment.center,
+              child: CameraPreview(widget.cameraController),
+            ),
           ),
-        ),
-        SizedBox(
-          width: w, height: w,
-          child: CachedNetworkImage(
-            imageUrl: widget.imageUrl,
-            imageBuilder: (context, imageProvider) {
-              return Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: imageProvider,
-                    fit: BoxFit.cover,
+          SizedBox(
+            width: w,
+            height: w,
+            child: CachedNetworkImage(
+              imageUrl: widget.frameImageUrl,
+              imageBuilder: (context, imageProvider) {
+                return Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: imageProvider,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-              );
-            },
-            fit: BoxFit.cover,
-          ),
-        )
-      ],
+                );
+              },
+              fit: BoxFit.cover,
+            ),
+          )
+        ],
+      ),
     );
   }
 }

@@ -22,7 +22,7 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
 
   /// Camera Controller
   CameraController? cameraController;
-  int position = -1;
+  late CameraDescription cameraDescription;
 
   FrameshotStateNotifier() : super(const FrameshotInitialize());
 
@@ -36,6 +36,17 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
     super.dispose();
   }
 
+  Future<List<CameraDescription>> get cameras async {
+    return await availableCameras();
+  }
+
+  Future<CameraDescription> getCameraDescriptionFromPosition(
+      String position) async {
+    final cameraList = await cameras;
+    final cameraPosition = position == 'front' ? 1 : 0;
+    return cameraList[cameraPosition];
+  }
+
   Future<void> initialize(FrameshotController controller) async {
     const camera = Permission.camera;
     final PermissionStatus cameraState = await camera.request();
@@ -43,12 +54,10 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
     await storage.request();
 
     if (cameraState.isGranted) {
-      if (position == -1) {
-        position = controller.position == 'front' ? 1 : 0;
-      }
-      final cameras = await availableCameras();
+      cameraDescription =
+          await getCameraDescriptionFromPosition(controller.getPosition);
       cameraController = CameraController(
-        cameras[position],
+        cameraDescription,
         ResolutionPreset.max,
         enableAudio: false,
       );
@@ -73,6 +82,11 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
       }
       if (message == 'save') {
         await _save();
+      }
+      if (message == 'position') {
+        cameraDescription =
+            await getCameraDescriptionFromPosition(controller!.getPosition);
+        await cameraController?.setDescription(cameraDescription);
       }
     }
   }
@@ -102,21 +116,25 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
     var imageBitmap = await Bitmap.fromProvider(Image.file(image).image);
     var frameBitmap =
         await Bitmap.fromProvider(NetworkImage(controller!.imageUrl));
-    if (position == 1) {
+    if (cameraDescription.lensDirection == CameraLensDirection.front) {
       imageBitmap = imageBitmap.apply(BitmapFlip.horizontal());
     }
     final imageBytes = await _merge(
       image: await imageBitmap.buildImage(),
       frame: await frameBitmap.buildImage(),
     );
-    controller?.event.tryEmit('capture_res', imageBytes);
+    try {
+      controller?.event.emit('capture_res', imageBytes);
+    } catch (_) {}
     state = FrameshotShow(image: imageBytes);
   }
 
   _reset() async {
     state = FrameshotView(
         imageUrl: controller!.imageUrl, controller: cameraController!);
-    controller?.event.tryEmit('capture_reset', null);
+    try {
+      controller?.event.emit('capture_reset', null);
+    } catch (_) {}
   }
 
   _save() async {
@@ -128,7 +146,9 @@ class FrameshotStateNotifier extends StateNotifier<FrameshotState> {
       await tempFile.writeAsBytes(image);
       await GallerySaver.saveImage(tempFile.path);
 
-      controller?.event.tryEmit('capture_save', true);
+      try {
+        controller?.event.emit('capture_save', tempFile.path);
+      } catch (_) {}
     }
   }
 
